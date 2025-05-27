@@ -7,9 +7,6 @@ final logger = Logger(
   level: kReleaseMode ? Level.warning : Level.debug,
 );
 
-
-
-
 void setupDartLogging() {
   dart_logging.Logger.root.level = dart_logging.Level.ALL;
   dart_logging.Logger.root.onRecord.listen((rec) {
