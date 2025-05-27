@@ -1,0 +1,71 @@
+# === Miscellaneous ===
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# === IntelliJ / Android Studio ===
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# === VS Code ===
+.vscode/
+
+# === Flutter / Dart / Pub ===
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# === Android ===
+android/.gradle/
+/android/app/debug
+/android/app/profile
+/android/app/release
+android/local.properties
+android/app/*.keystore
+
+# === iOS / CocoaPods ===
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.podspec
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/xcuserdata/
+ios/DerivedData/
+
+# === Symbolication & Obfuscation ===
+app.*.symbols
+app.*.map.json
+
+# === Coverage & Reports ===
+coverage/
+*.lcov
+
+# === Secrets & Env Files ===
+*.env
+secret_keys.json
+
+# === Windows (uncomment if needed) ===
+Thumbs.db
+ehthumbs.db
+
+# === Desktop Platforms (uncomment if needed) ===
+windows/.dart_tool/
+windows/flutter/ephemeral/
+windows/runner/Release/
+linux/.dart_tool/
+macos/.dart_tool/
