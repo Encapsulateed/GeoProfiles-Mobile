@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:geo_profiles_mobile/services/api_service.dart';
+import 'package:geo_profiles_mobile/core/env.dart';
 import 'package:provider/provider.dart';
+import 'core/logger.dart';
+import 'services/api_service.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  setupDartLogging();
+  logger.i('App initializing, API = ${Env.apiBaseUrl}');
+
   final storage = FlutterSecureStorage();
   final jwt = await storage.read(key: 'jwt_token');
 
   final apiService = ApiService.create(
-    baseUrl: 'http://localhost:8080/api/v1',
+    baseUrl: Env.apiBaseUrl,
     bearerToken: jwt,
   );
 
