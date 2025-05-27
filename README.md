@@ -23,5 +23,5 @@ flutter run --enable-software-rendering --no-enable-impeller
 
 На вебе
 ```
-flutter run -d chrome --verbose 
+flutter run -d chrome
 ```
