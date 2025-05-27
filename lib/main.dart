@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
@@ -8,26 +7,21 @@ import 'core/logger.dart';
 import 'core/router.dart';
 import 'services/api_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   setupDartLogging();
   logger.i('App initializing, API = ${Env.apiBaseUrl}');
 
-  final storage = FlutterSecureStorage();
+  const storage = FlutterSecureStorage();
   final jwt = await storage.read(key: 'jwt_token');
 
-  final apiService = ApiService.create(
-    baseUrl: Env.apiBaseUrl,
-    bearerToken: jwt,
-  );
-
-  final initialRoute = (jwt == null) ? '/register' : '/projects';
+  final apiService = ApiService.create(baseUrl: Env.apiBaseUrl);
 
   runApp(
     Provider<ApiService>.value(
       value: apiService,
-      child: MyApp(initialRoute: initialRoute),
+      child: MyApp(initialRoute: jwt == null ? '/register' : '/projects'),
     ),
   );
 }
