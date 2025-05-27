@@ -24,6 +24,10 @@ dependencies:
   logger: ^1.0.0
   sentry_flutter: ^8.14.2
   intl: ^0.20.2
+  flutter_map: ^5.0.0
+  latlong2: 0.9.0
+  wkt_parser: ^2.0.0
+  fl_chart: ^0.71.0
 
 dev_dependencies:
   flutter_test:
