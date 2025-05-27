@@ -1,0 +1,838 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "GeoProfiles API",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/projects": {
+      "post": {
+        "tags": [
+          "Create"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              },
+              "example": {"name":"Project 1"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDto"
+                },
+                "example": {"id":"11111111-1111-1111-1111-111111111111","name":"Amsterdam Central Area","bboxWkt":"POLYGON ((4.889 -52.373, 4.899 -52.373, 4.899 -52.363, 4.889 -52.363, 4.889 -52.373))","isolines":[{"level":0,"geomWkt":"LINESTRING (…)"},{"level":1,"geomWkt":"LINESTRING (…)"}]}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/{projectId}/profile": {
+      "post": {
+        "tags": [
+          "Create"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileRequest"
+              },
+              "example": {"start":[30.123,59.987],"end":[30.456,60.012]}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileResponse"
+                },
+                "example": {"profileId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","length_m":1234.56,"points":[{"distance":0,"elevation":10.5},{"distance":100,"elevation":15.2},{"distance":200,"elevation":20.1},{"distance":300,"elevation":18.7},{"distance":400,"elevation":22.4},{"distance":500,"elevation":25},{"distance":600,"elevation":23.8},{"distance":700,"elevation":27.5},{"distance":800,"elevation":30}]}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/project/{id}": {
+      "get": {
+        "tags": [
+          "Get"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDto"
+                },
+                "example": {"id":"11111111-1111-1111-1111-111111111111","name":"Amsterdam Central Area","bboxWkt":"POLYGON ((4.889 -52.373, 4.899 -52.373, 4.899 -52.363, 4.889 -52.363, 4.889 -52.373))","isolines":[{"level":0,"geomWkt":"LINESTRING (…)"},{"level":1,"geomWkt":"LINESTRING (…)"}]}
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/{projectId}/profile/{profileId}": {
+      "get": {
+        "tags": [
+          "Get"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "profileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FullProfileResponse"
+                },
+                "example": {"profileId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","start":[30.1,59.9],"end":[30.5,60.2],"length_m":500.0,"created_at":"2025-05-20T13:00:00+03:00","points":[{"distance":0,"elevation":100},{"distance":125,"elevation":110},{"distance":250,"elevation":120},{"distance":375,"elevation":115},{"distance":500,"elevation":105}]}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/project/list": {
+      "get": {
+        "tags": [
+          "List"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectsListDto"
+                },
+                "example": {"projects":[{"id":"11111111-1111-1111-1111-111111111111","name":"Amsterdam centre","bboxWkt":"POLYGON((4.889 -52.373,4.899 -52.373,4.899 -52.363,4.889 -52.363,4.889 -52.373))","createdAt":"2025-05-20T14:30:00+00:00"},{"id":"22222222-2222-2222-2222-222222222222","name":"Berlin Mitte","bboxWkt":"POLYGON((13.38 52.51,13.4 52.51,13.4 52.5,13.38 52.5,13.38 52.51))","createdAt":"2025-05-22T09:15:00+00:00"}]}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/{projectId}/list": {
+      "get": {
+        "tags": [
+          "List"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileList"
+                },
+                "example": {"items":[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","start":[30.123,59.987],"end":[30.456,60.012],"length_m":1234.56,"created_at":"2025-05-01T15:34:56+03:00"},{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","start":[30.2,59.99],"end":[30.5,60],"length_m":1500.00,"created_at":"2025-05-02T11:15:00+03:00"}]}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Login"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDataRequest"
+              },
+              "example": {"username":"sample-username","email":"sample-email@gmail.com","passwordHash":"$2b$12$e9Vl0r1bUsYHjvXgk6x5hOe6vLqB5MEP5QmrW0CscJofzlhKg/a0G"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenDto"
+                },
+                "example": {"token":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...","tokenType":"Bearer","refreshToken":"d9428888-122b-11e1-b85c-61cd3cbb3210","expiresIn":3600}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                },
+                "example": {"id":"06739fee-a7ba-41a9-961c-d16dbd2ba285","username":"sample-username","email":"sample-email@gmail.com"}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Refresh"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              },
+              "example": {"refreshToken":"f4710b-58cc-4372-a567-0e02b2c3d479"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshDto"
+                },
+                "example": {"token":"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...","refreshToken":"d9428888-122b-11e1-b85c-61cd3cbb3210"}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/register": {
+      "post": {
+        "tags": [
+          "Register"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserDataRequest"
+              },
+              "example": {"username":"sample-username","email":"sample-email@gmail.com","passwordHash":"$2b$12$e9Vl0r1bUsYHjvXgk6x5hOe6vLqB5MEP5QmrW0CscJofzlhKg/a0G"}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                },
+                "example": {"id":"06739fee-a7ba-41a9-961c-d16dbd2ba285","username":"sample-username","email":"sample-email@gmail.com"}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateProjectRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errorCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "errorMessage": {
+            "type": "string",
+            "nullable": true
+          },
+          "errorDetails": {
+            "nullable": true
+          },
+          "errorId": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FullProfileResponse": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "start": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "nullable": true
+          },
+          "end": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "nullable": true
+          },
+          "length_m": {
+            "type": "number",
+            "format": "double"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePoint"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "IsolineDto": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "geomWkt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileListItem"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "start": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "nullable": true
+          },
+          "end": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "nullable": true
+          },
+          "length_m": {
+            "type": "number",
+            "format": "double"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfilePoint": {
+        "type": "object",
+        "properties": {
+          "distance": {
+            "type": "number",
+            "format": "double"
+          },
+          "elevation": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileRequest": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "nullable": true
+          },
+          "end": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "format": "double"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProfileResponse": {
+        "type": "object",
+        "properties": {
+          "profileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "length_m": {
+            "type": "number",
+            "format": "double"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePoint"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "bboxWkt": {
+            "type": "string",
+            "nullable": true
+          },
+          "isolines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IsolineDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "bboxWkt": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectsListDto": {
+        "type": "object",
+        "properties": {
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectSummaryDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RefreshDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RefreshRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "TokenDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "tokenType": {
+            "type": "string",
+            "nullable": true
+          },
+          "refreshToken": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserDataRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "passwordHash": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "JWT Authorization header using the Bearer scheme. Enter your token below.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
