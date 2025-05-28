@@ -8,6 +8,7 @@ import '../pages/profiles/profile_list_page.dart';
 import '../pages/profiles/profile_detail_page.dart';
 import '../pages/settings/settings_page.dart';
 import '../pages/not_found_page.dart';
+import '../pages/user_profile.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -44,7 +45,8 @@ class AppRouter {
 
       case '/settings':
         return MaterialPageRoute(builder: (_) => const SettingsPage());
-
+      case '/profile':
+        return MaterialPageRoute(builder: (_) => const UserProfilePage());
       default:
         return MaterialPageRoute(builder: (_) => const NotFoundPage());
     }
