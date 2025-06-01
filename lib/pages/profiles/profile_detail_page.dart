@@ -47,7 +47,6 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
     }
   }
 
-  // Calculate total ascent
   double _ascent(List<ProfilePoint> pts) {
     double total = 0;
     for (var i = 1; i < pts.length; i++) {
@@ -55,6 +54,74 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
       if (diff > 0) total += diff;
     }
     return total;
+  }
+
+  double _descent(List<ProfilePoint> pts) {
+    double total = 0;
+    for (var i = 1; i < pts.length; i++) {
+      final diff = pts[i - 1].elevation! - pts[i].elevation!;
+      if (diff > 0) total += diff;
+    }
+    return total;
+  }
+
+  double _maxSlope(List<ProfilePoint> pts) {
+    double maxSlope = 0;
+    for (var i = 1; i < pts.length; i++) {
+      final dy = pts[i].elevation! - pts[i - 1].elevation!;
+      final dx = pts[i].distance! - pts[i - 1].distance!;
+      if (dx != 0) {
+        final slope = dy.abs() / dx;
+        if (slope > maxSlope) maxSlope = slope;
+      }
+    }
+    return maxSlope;
+  }
+
+  double _avgAscentSlope(List<ProfilePoint> pts) {
+    double total = 0;
+    int count = 0;
+    for (var i = 1; i < pts.length; i++) {
+      final dy = pts[i].elevation! - pts[i - 1].elevation!;
+      final dx = pts[i].distance! - pts[i - 1].distance!;
+      if (dx != 0 && dy > 0) {
+        total += dy / dx;
+        count++;
+      }
+    }
+    return count > 0 ? total / count : 0;
+  }
+
+  double _avgDescentSlope(List<ProfilePoint> pts) {
+    double total = 0;
+    int count = 0;
+    for (var i = 1; i < pts.length; i++) {
+      final dy = pts[i - 1].elevation! - pts[i].elevation!;
+      final dx = pts[i].distance! - pts[i - 1].distance!;
+      if (dx != 0 && dy > 0) {
+        total += dy / dx;
+        count++;
+      }
+    }
+    return count > 0 ? total / count : 0;
+  }
+
+  double _elevationRange(List<ProfilePoint> pts) {
+    final min = pts.map((p) => p.elevation!).reduce(math.min);
+    final max = pts.map((p) => p.elevation!).reduce(math.max);
+    return max - min;
+  }
+
+  int _peakPointIndex(List<ProfilePoint> pts) {
+    double maxElev = double.negativeInfinity;
+    int index = 0;
+    for (int i = 0; i < pts.length; i++) {
+      if (pts[i].elevation! > maxElev) {
+        maxElev = pts[i].elevation!;
+        index = i;
+      }
+    }
+    return index;
   }
 
   @override
@@ -74,15 +141,24 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
     final minElev = pts.map((p) => p.elevation!).reduce(math.min);
     final maxElev = pts.map((p) => p.elevation!).reduce(math.max);
     final ascent = _ascent(pts).round();
+    final descent = _descent(pts).round();
+    final maxSlope = _maxSlope(pts);
+    final avgAscentSlope = _avgAscentSlope(pts);
+    final avgDescentSlope = _avgDescentSlope(pts);
+    final elevationRange = _elevationRange(pts).round();
+    final peakIndex = _peakPointIndex(pts);
     final lengthKm = (_data!.lengthM ?? 0) / 1000;
 
     final minDist = pts.first.distance!;
     final maxDist = pts.last.distance!;
-    final spots = pts
-        .map((p) => FlSpot(p.distance! - minDist, p.elevation!))
+
+    final adjustedSpots = pts
+        .map((p) => FlSpot(
+      p.distance! - minDist,
+      p.elevation! < 0 ? 0 : p.elevation!,
+    ))
         .toList();
 
-    // Compute intervals, ensure non-zero
     final rawX = (maxDist - minDist) / 5;
     final xInterval = rawX > 0 ? rawX : 1.0;
     final rawY = (maxElev - minElev) / 5;
@@ -107,13 +183,18 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
                 LineChartData(
                   minX: 0,
                   maxX: maxDist - minDist,
-                  minY: minElev.toDouble(),
-                  maxY: maxElev.toDouble(),
+                  minY: 0,
+                  maxY: (maxElev < 0 ? 0 : maxElev).toDouble(),
                   gridData: FlGridData(
                     show: true,
-                    drawVerticalLine: false,
+                    drawVerticalLine: true,
                     horizontalInterval: yInterval,
+                    verticalInterval: xInterval,
                     getDrawingHorizontalLine: (_) => FlLine(
+                      color: Colors.grey.shade300,
+                      strokeWidth: 1,
+                    ),
+                    getDrawingVerticalLine: (_) => FlLine(
                       color: Colors.grey.shade300,
                       strokeWidth: 1,
                     ),
@@ -143,44 +224,110 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
                       ),
                     ),
                   ),
-                  borderData: FlBorderData(show: false),
-                  lineTouchData: LineTouchData(enabled: false),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border.all(color: Colors.grey.shade400),
+                  ),
+                  lineTouchData: LineTouchData(
+                    handleBuiltInTouches: true,
+                    touchTooltipData: LineTouchTooltipData(
+                    ),
+                  ),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: spots,
+                      spots: adjustedSpots,
                       isCurved: true,
-                      color: Colors.black,
-                      barWidth: 2,
-                      dotData: FlDotData(show: false),
+                      color: Colors.blue,
+                      barWidth: 3,
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.blue.withOpacity(0.3),
+                            Colors.blue.withOpacity(0.1),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) {
+                          if (index == 0 ||
+                              index == adjustedSpots.length - 1 ||
+                              index == peakIndex) {
+                            return FlDotCirclePainter(
+                                radius: 5,
+                                color: Colors.blue,
+                                strokeWidth: 2,
+                                strokeColor: Colors.white
+                            );
+                          }
+                          return FlDotCirclePainter(
+                              radius: 0,
+                              color: Colors.transparent
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _metric('Min Elevation', '${minElev.toInt()} m'),
-                _metric('Length',
-                    '${NumberFormat('#,##0.0', 'en').format(lengthKm)} km'),
-                _metric('Total Ascent', '${ascent} m'),
-              ],
+            _buildMetricCard(
+              icon: Icons.terrain,
+              title: 'Min Elevation',
+              value: '${minElev < 0 ? 0 : minElev.toInt()} m',
+              description: 'Минимальная высота над уровнем моря на маршруте',
             ),
-            const SizedBox(height: 32),
-            SizedBox(
-              height: 52,
-              child: OutlinedButton(
-                onPressed: () {/* TODO share */},
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text(
-                  'Share',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
+            _buildMetricCard(
+              icon: Icons.landscape,
+              title: 'Max Elevation',
+              value: '${maxElev < 0 ? 0 : maxElev.toInt()} m',
+              description: 'Максимальная высота над уровнем моря на маршруте',
+            ),
+            _buildMetricCard(
+              icon: Icons.straighten,
+              title: 'Length',
+              value: '${NumberFormat('#,##0.0', 'en').format(lengthKm)} km',
+              description: 'Общая протяженность маршрута',
+            ),
+            _buildMetricCard(
+              icon: Icons.trending_up,
+              title: 'Total Ascent',
+              value: '$ascent m',
+              description: 'Суммарный набор высоты на всех подъемах маршрута',
+            ),
+            _buildMetricCard(
+              icon: Icons.trending_down,
+              title: 'Total Descent',
+              value: '$descent m',
+              description: 'Суммарная потеря высоты на всех спусках маршрута',
+            ),
+            _buildMetricCard(
+              icon: Icons.warning,
+              title: 'Max Slope',
+              value: '${(maxSlope * 100).toStringAsFixed(1)}%',
+              description: 'Максимальный уклон на маршруте (самый крутой участок)',
+            ),
+            _buildMetricCard(
+              icon: Icons.arrow_upward,
+              title: 'Avg Ascent Slope',
+              value: '${(avgAscentSlope * 100).toStringAsFixed(1)}%',
+              description: 'Средний уклон на участках подъема',
+            ),
+            _buildMetricCard(
+              icon: Icons.arrow_downward,
+              title: 'Avg Descent Slope',
+              value: '${(avgDescentSlope * 100).toStringAsFixed(1)}%',
+              description: 'Средний уклон на участках спуска',
+            ),
+            _buildMetricCard(
+              icon: Icons.height,
+              title: 'Elevation Range',
+              value: '$elevationRange m',
+              description: 'Перепад высот между самой низкой и самой высокой точками',
             ),
           ],
         ),
@@ -188,15 +335,76 @@ class _ProfileDetailPageState extends State<ProfileDetailPage> {
     );
   }
 
-  Widget _metric(String label, String value) => Column(
-    children: [
-      Text(label, style: const TextStyle(fontSize: 13)),
-      const SizedBox(height: 4),
-      Text(value,
-          style:
-          const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    ],
-  );
+  Widget _buildMetricCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required String description,
+  }) {
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.blue.shade700),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.help_outline, size: 20),
+              color: Colors.grey,
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text(title),
+                    content: Text(description),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _BottomNav extends StatelessWidget {
