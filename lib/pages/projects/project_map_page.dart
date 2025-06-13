@@ -1,6 +1,12 @@
+// ignore_for_file: public_member_api_docs, unnecessary_null_checks
+
 import 'dart:async';
+import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +31,8 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
   double _zoom = 13.0;
   final MapController _mapController = MapController();
 
+  final _mapKey = GlobalKey(); // для скрина
+
   @override
   void initState() {
     super.initState();
@@ -37,95 +45,82 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
     try {
       final pr = await _api.getProjectById(id: widget.projectId!);
       if (mounted) setState(() => _project = pr);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load project: $e')),
-        );
-      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  List<double> _extractNumbers(String wkt) {
-    final numReg = RegExp(r'[-+]?(?:\d*\.\d+|\d+)(?:[eE][-+]?\d+)?');
-    return numReg.allMatches(wkt).map((m) => double.parse(m.group(0)!)).toList();
-  }
+  // ─── utils WKT -> LatLng ───
+  List<double> _nums(String wkt) =>
+      RegExp(r'[-+]?\d+(?:\.\d+)?').allMatches(wkt).map((m) => double.parse(m.group(0)!)).toList();
 
-  List<LatLng> _toLatLng(List<double> nums) {
-    final pts = <LatLng>[];
-    for (var i = 0; i + 1 < nums.length; i += 2) {
-      pts.add(LatLng(nums[i + 1], nums[i]));
-    }
-    return pts;
-  }
+  List<LatLng> _toLatLng(List<double> ns) =>
+      [for (int i = 0; i + 1 < ns.length; i += 2) LatLng(ns[i + 1], ns[i])];
 
-  List<LatLng> _parseLine(String wkt) => _toLatLng(_extractNumbers(wkt));
+  List<LatLng> _line(String wkt) => _toLatLng(_nums(wkt));
 
-  List<List<LatLng>> _parsePolygon(String wkt) {
+  List<List<LatLng>> _polygon(String wkt) {
     final body = wkt.substring(wkt.indexOf('((') + 2, wkt.lastIndexOf('))'));
-    final rings = body.split('),(');
-    return rings.map((r) => _toLatLng(_extractNumbers(r))).toList();
+    return body.split('),(').map((r) => _toLatLng(_nums(r))).toList();
   }
 
   LatLngBounds? _boundsFromPolygon(String? wkt) {
     if (wkt == null || !wkt.startsWith('POLYGON')) return null;
-    final pts = _parsePolygon(wkt).expand((e) => e).toList();
+    final pts = _polygon(wkt).expand((e) => e).toList();
     if (pts.isEmpty) return null;
     var swLat = pts.first.latitude, swLon = pts.first.longitude;
     var neLat = pts.first.latitude, neLon = pts.first.longitude;
     for (final p in pts) {
-      if (p.latitude < swLat) swLat = p.latitude;
-      if (p.longitude < swLon) swLon = p.longitude;
-      if (p.latitude > neLat) neLat = p.latitude;
-      if (p.longitude > neLon) neLon = p.longitude;
+      swLat = min(swLat, p.latitude);
+      swLon = min(swLon, p.longitude);
+      neLat = max(neLat, p.latitude);
+      neLon = max(neLon, p.longitude);
     }
     return LatLngBounds(LatLng(swLat, swLon), LatLng(neLat, neLon));
   }
 
+  Color _levelColor(double level, double min, double max) {
+    final t = (level - min) / (max - min);
+    final k = 0.25 + 0.5 * t;
+    final v = (k * 255).round();
+    return Color.fromARGB(255, v, v, v);
+  }
   List<Polyline> _buildIsolines() {
-    if (_project?.isolines == null) return [];
-    final res = <Polyline>[];
-    final totalLines = _project!.isolines!.length;
-    final baseColor = const Color(0xFF4A6572); // Приглушенный сине-серый
+    if (_project?.isolines == null || _project!.isolines!.isEmpty) return [];
 
-    for (int i = 0; i < totalLines; i++) {
-      final iso = _project!.isolines![i];
-      final w = iso.geomWkt;
-      if (w == null) continue;
+    final levels = _project!.isolines!
+        .map((i) => i.level ?? 0)
+        .toList()
+      ..sort();
+    final minL = levels.first;
+    final maxL = levels.last;
 
-      // Градиент от темного к светлому
-      final color = Color.lerp(
-          baseColor,
-          baseColor.withOpacity(0.5),
-          i / (totalLines - 1)
-      )!;
-
-      if (w.startsWith('LINESTRING')) {
-        res.add(Polyline(
-          points: _parseLine(w),
-          strokeWidth: 2.5,
-          color: color,
-        ));
-      } else if (w.startsWith('POLYGON')) {
-        for (final ring in _parsePolygon(w)) {
-          res.add(Polyline(
-            points: ring,
-            strokeWidth: 2.5,
-            color: color,
-          ));
-        }
-      }
+    return [
+      for (final iso in _project!.isolines!)
+        ..._isoToPolys(
+          iso,
+          _levelColor(iso.level ?? minL, minL, maxL),          // NEW
+        ),
+    ];
+  }
+  List<Polyline> _isoToPolys(IsolineDto iso, Color c) {
+    final w = iso.geomWkt;
+    if (w == null) return [];
+    if (w.startsWith('LINESTRING')) {
+      return [Polyline(points: _line(w), strokeWidth: 2.5, color: c)];
+    } else if (w.startsWith('POLYGON')) {
+      return [
+        for (final ring in _polygon(w)) Polyline(points: ring, strokeWidth: 2.5, color: c),
+      ];
     }
-    return res;
+    return [];
   }
 
-  void _onTap(TapPosition position, LatLng latlng) => setState(() {
+  void _onTap(TapPosition _, LatLng p) => setState(() {
     if (_start == null) {
-      _start = latlng;
+      _start = p;
     } else {
-      _end = latlng;
+      _end = p;
     }
   });
 
@@ -135,32 +130,44 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
   });
 
   void _fitBounds() {
-    final bounds = _boundsFromPolygon(_project?.bboxWkt);
-    if (bounds != null) {
-      _mapController.fitBounds(bounds);
-    }
+    final b = _boundsFromPolygon(_project?.bboxWkt);
+    if (b != null) _mapController.fitBounds(b);
+  }
+
+  Future<Uint8List> _captureMapImage() async {
+    await WidgetsBinding.instance.endOfFrame;
+    final rrb = _mapKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final dpr = ui.PlatformDispatcher.instance.views.first.devicePixelRatio * 2;
+    final img = await rrb.toImage(pixelRatio: dpr);
+    final bd = await img.toByteData(format: ui.ImageByteFormat.png);
+    return bd!.buffer.asUint8List();
   }
 
   Future<void> _submit() async {
     if (_start == null || _end == null) return;
-    try {
-      final resp = await _api.createProfile(
-        projectId: widget.projectId!,
-        start: [_start!.longitude, _start!.latitude],
-        end: [_end!.longitude, _end!.latitude],
-      );
-      if (!mounted) return;
-      Navigator.pushNamed(context, '/profileDetail', arguments: <String, String>{
+
+    final sel = LatLngBounds(_start!, _end!);
+    _mapController.fitBounds(sel, options: const FitBoundsOptions(padding: EdgeInsets.all(60)));
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    final mapBytes = await _captureMapImage();
+
+    final resp = await _api.createProfile(
+      projectId: widget.projectId!,
+      start: [_start!.longitude, _start!.latitude],
+      end: [_end!.longitude, _end!.latitude],
+    );
+
+    if (!mounted) return;
+    Navigator.pushNamed(
+      context,
+      '/profileDetail',
+      arguments: {
         'projectId': widget.projectId!,
-        'profileId' : resp.profileId ?? '',
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create profile: $e')),
-        );
-      }
-    }
+        'profileId': resp.profileId ?? '',
+        'mapBytes': mapBytes,
+      },
+    );
   }
 
   @override
@@ -170,33 +177,26 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
     }
 
     final bounds = _boundsFromPolygon(_project?.bboxWkt);
-    final isoPolylines = _buildIsolines();
+    final isoPolys = _buildIsolines();
 
-    final markers = <Marker>[];
-    if (_start != null) markers.add(_mk(_start!, Colors.blue));
-    if (_end != null) markers.add(_mk(_end!, Colors.red));
+    final markers = [
+      if (_start != null) _mk(_start!, Colors.blue),
+      if (_end != null) _mk(_end!, Colors.red),
+    ];
 
     final selLine = (_start != null && _end != null)
         ? Polyline(
       points: [_start!, _end!],
-      strokeWidth: 4.0,
-      color: Colors.blue.shade700, // Красивый синий цвет
-      isDotted: true, // Пунктир для лучшей видимости
+      strokeWidth: 4,
+      color: Colors.blue.shade700,
+      isDotted: true,
     )
         : null;
-    final polys = [...isoPolylines, if (selLine != null) selLine];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_project?.name ?? 'Project'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: _fitBounds,
-            tooltip: 'Fit to area',
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(_project?.name ?? 'Project'), actions: [
+        IconButton(icon: const Icon(Icons.my_location), onPressed: _fitBounds)
+      ]),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -204,51 +204,33 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    center: bounds?.center ?? const LatLng(0, 0),
-                    zoom: _zoom,
-                    interactiveFlags: InteractiveFlag.all,
-                    onTap: _onTap,
-                    bounds: bounds,
-                    onMapReady: () {
-                      if (bounds != null) {
-                        _mapController.fitBounds(bounds);
-                      }
-                    },
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-                      subdomains: const ['a', 'b', 'c'],
-                      userAgentPackageName: 'com.example.app',
+                child: RepaintBoundary(
+                  key: _mapKey,
+                  child: FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      center: bounds?.center,
+                      zoom: _zoom,
+                      bounds: bounds,
+                      interactiveFlags: InteractiveFlag.all,
+                      onTap: _onTap,
+                      onMapReady: () => bounds != null ? _mapController.fitBounds(bounds) : null,
                     ),
-                    if (polys.isNotEmpty) PolylineLayer(polylines: polys),
-                    if (markers.isNotEmpty) MarkerLayer(markers: markers),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            FloatingActionButton.small(
-                              heroTag: 'zoomIn',
-                              onPressed: () => _mapController.move(_mapController.center, _mapController.zoom + 0.5),
-                              child: const Icon(Icons.add),
-                            ),
-                            const SizedBox(height: 8),
-                            FloatingActionButton.small(
-                              heroTag: 'zoomOut',
-                              onPressed: () => _mapController.move(_mapController.center, _mapController.zoom - 0.5),
-                              child: const Icon(Icons.remove),
-                            ),
-                          ],
-                        ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+                        subdomains: const ['a', 'b', 'c'],
+                        userAgentPackageName: 'com.example.app',
                       ),
-                    ),
-                  ],
+                      if (isoPolys.isNotEmpty)
+                        PolylineLayer(polylines: [
+                          ...isoPolys,
+                          if (selLine != null) selLine,
+                        ]),
+                      if (markers.isNotEmpty) MarkerLayer(markers: markers),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -260,14 +242,6 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
                     onPressed: _clear,
                     icon: const Icon(Icons.clear, size: 20),
                     label: const Text('CLEAR'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade300,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -276,16 +250,6 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
                     onPressed: (_start != null && _end != null) ? _submit : null,
                     icon: const Icon(Icons.terrain, size: 20),
                     label: const Text('PROFILE'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: (_start != null && _end != null)
-                          ? Colors.blue.shade600
-                          : Colors.grey.shade400,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                   ),
                 ),
               ],
@@ -297,55 +261,31 @@ class _ProjectMapPageState extends State<ProjectMapPage> {
     );
   }
 
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      onTap: (i) {
-        switch (i) {
-          case 0:
-            Navigator.pop(context);
-            break;
-          case 1:
-            Navigator.pushNamed(context, '/profile');
-            break;
-          case 2:
-            Navigator.pushNamed(context, '/settings');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-        BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Settings'),
-      ],
-    );
-  }
+  BottomNavigationBar _buildBottomNav() => BottomNavigationBar(
+    currentIndex: 0,
+    onTap: (i) {
+      if (i == 0) Navigator.pop(context);
+      if (i == 1) Navigator.pushNamed(context, '/profile');
+      if (i == 2) Navigator.pushNamed(context, '/settings');
+    },
+    items: const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+      BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: 'Settings'),
+    ],
+  );
 
-  Marker _mk(LatLng p, Color color) => Marker(
+  Marker _mk(LatLng p, Color c) => Marker(
     point: p,
     width: 24,
     height: 24,
-    builder: (ctx) => _ColoredDot(color: color),
-  );
-}
-
-class _ColoredDot extends StatelessWidget {
-  final Color color;
-  const _ColoredDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: color,
-      shape: BoxShape.circle,
-      border: Border.all(color: Colors.white, width: 2.0),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.3),
-          blurRadius: 4,
-          spreadRadius: 1,
-        ),
-      ],
+    builder: (_) => Container(
+      decoration: BoxDecoration(
+        color: c,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      ),
     ),
   );
 }

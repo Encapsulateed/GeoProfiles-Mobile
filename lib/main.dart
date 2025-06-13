@@ -6,6 +6,7 @@ import 'core/env.dart';
 import 'core/logger.dart';
 import 'core/router.dart';
 import 'services/api_service.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

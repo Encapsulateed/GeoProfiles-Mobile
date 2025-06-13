@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../pages/auth/login_page.dart';
@@ -35,11 +37,12 @@ class AppRouter {
         );
 
       case '/profileDetail':
-        final args = settings.arguments as Map<String, String>;
+        final args = settings.arguments as Map<String, Object?>; // безопасный cast
         return MaterialPageRoute(
           builder: (_) => ProfileDetailPage(
-            projectId: args['projectId']!,
-            profileId: args['profileId']!,
+            projectId: args['projectId'] as String,
+            profileId:  args['profileId']  as String,
+            mapBytes:   args['mapBytes']   as Uint8List?, // может быть null
           ),
         );
 

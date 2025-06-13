@@ -1,77 +1,103 @@
+// lib/services/api_service.dart
+// ignore_for_file: public_member_api_docs
+
 import 'dart:async';
 
 import 'package:chopper/chopper.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geo_profiles_mobile/api/api.swagger.dart';
 
+import '../api/client_mapping.dart';
 
+/// Adds the `Authorization: Bearer <jwt>` header to every outgoing request
+/// when an access-token is cached in [FlutterSecureStorage].
 class AuthInterceptor implements Interceptor {
-  final FlutterSecureStorage _storage;
-  AuthInterceptor(this._storage);
+  const AuthInterceptor(this._storage);
 
-  /// На каждый запрос добавляем "Authorization: Bearer <jwt>" — если токен есть.
+  final FlutterSecureStorage _storage;
+
   @override
-  FutureOr<Response<BodyType>> intercept<BodyType>(
-      Chain<BodyType> chain) async {
+  Future<Response<BodyType>> intercept<BodyType>(
+      Chain<BodyType> chain,
+      ) async {
     final token = await _storage.read(key: 'jwt_token');
 
-    final Request request = (token != null && token.isNotEmpty)
+    final Request authorisedRequest = (token != null && token.isNotEmpty)
         ? chain.request.copyWith(headers: {
       ...chain.request.headers,
       'Authorization': 'Bearer $token',
     })
         : chain.request;
 
-    return chain.proceed(request);
+    return chain.proceed(authorisedRequest);
   }
 }
 
+/// Thin wrapper around the generated [Api] client that
+/// * plugs in token caching / refresh logic
+/// * exposes strongly-typed helper methods
+/// * hides the underlying [ChopperClient] from the rest of the app.
 class ApiService {
+  ApiService._(this._api, this._client, this._storage);
+
   final Api _api;
   final ChopperClient _client;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage;
 
-  ApiService._(this._api, this._client);
-
+  /// Creates the service pointing to [baseUrl].
   factory ApiService.create({required String baseUrl}) {
-    final storage = const FlutterSecureStorage();
+    const storage = FlutterSecureStorage();
 
     final client = ChopperClient(
-        baseUrl: Uri.parse(baseUrl),
-        services: [Api.create()],
-        converter: $JsonSerializableConverter(),
-        interceptors: [
-    AuthInterceptor(storage),
-    HttpLoggingInterceptor(),
-    ],
+      baseUrl: Uri.parse(baseUrl),
+      services: [Api.create()],
+      converter: $JsonSerializableConverter(),
+      interceptors: [
+        AuthInterceptor(storage),
+        if (kDebugMode) HttpLoggingInterceptor(),
+      ],
     );
 
-    return ApiService._(Api.create(client: client), client);
+    return ApiService._(Api.create(client: client), client, storage);
   }
 
-  // ================= PRIVATE =================
-  Future<void> _cacheTokens(TokenDto t) async {
-    if (t.token != null) await _storage.write(key: 'jwt_token', value: t.token);
-    if (t.refreshToken != null) {
-      await _storage.write(key: 'refresh_token', value: t.refreshToken);
+  /// Dispose the underlying HTTP client.
+  void dispose() => _client.dispose();
+
+  // ---------------------------------------------------------------------------
+  //  Helpers
+  // ---------------------------------------------------------------------------
+
+  Future<void> _cacheTokens({String? token, String? refreshToken}) async {
+    if (token != null && token.isNotEmpty) {
+      await _storage.write(key: 'jwt_token', value: token);
+    }
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      await _storage.write(key: 'refresh_token', value: refreshToken);
     }
   }
 
-  // ================= AUTH =================
+  // ---------------------------------------------------------------------------
+  //  Auth
+  // ---------------------------------------------------------------------------
+
   Future<TokenDto> login({
     required String username,
     required String email,
     required String passwordHash,
   }) async {
-    final r = await _api.apiV1AuthLoginPost(
+    final response = await _api.apiV1AuthLoginPost(
       body: UserDataRequest(
         username: username,
         email: email,
         passwordHash: passwordHash,
       ),
     );
-    await _cacheTokens(r.body!);
-    return r.body!;
+
+    final dto = response.body!;
+    await _cacheTokens(token: dto.token, refreshToken: dto.refreshToken);
+    return dto;
   }
 
   Future<UserDto> register({
@@ -79,76 +105,105 @@ class ApiService {
     required String email,
     required String passwordHash,
   }) async {
-    final r = await _api.apiV1RegisterPost(
+    final response = await _api.apiV1RegisterPost(
       body: UserDataRequest(
         username: username,
         email: email,
         passwordHash: passwordHash,
       ),
     );
-    return r.body!;
+    return response.body!;
   }
 
   Future<UserDto> me() async {
-    final r = await _api.apiV1AuthMeGet();
-    return r.body!;
+    final response = await _api.apiV1AuthMeGet();
+    return response.body!;
   }
 
   Future<RefreshDto> refreshToken() async {
-    final refreshToken = await _storage.read(key: 'refresh_token');
-    if (refreshToken == null) throw Exception('No refresh token');
+    final storedRefresh = await _storage.read(key: 'refresh_token');
+    if (storedRefresh == null || storedRefresh.isEmpty) {
+      throw StateError('No refresh token stored');
+    }
 
-    final r = await _api.apiV1AuthRefreshPost(
-      body: RefreshRequest(refreshToken: refreshToken),
+    final response = await _api.apiV1AuthRefreshPost(
+      body: RefreshRequest(refreshToken: storedRefresh),
     );
-    await _cacheTokens(r.body! as TokenDto);
-    return r.body!;
+
+    final dto = response.body!;
+    await _cacheTokens(token: dto.token, refreshToken: dto.refreshToken);
+    return dto;
   }
 
-  // ================= PROJECTS =================
+  // ---------------------------------------------------------------------------
+  //  Projects
+  // ---------------------------------------------------------------------------
+
   Future<ProjectsListDto> getProjectsList() async {
-    final r = await _api.apiV1ProjectListGet();
-    return r.body!;
+    final response = await _api.apiV1ProjectListGet();
+    return response.body!;
   }
 
   Future<ProjectDto> createProject({required String name}) async {
-    final r = await _api.apiV1ProjectsPost(
+    final response = await _api.apiV1ProjectsPost(
       body: CreateProjectRequest(name: name),
     );
-    return r.body!;
+    return response.body!;
   }
 
   Future<ProjectDto> getProjectById({required String id}) async {
-    final r = await _api.apiV1ProjectIdGet(id: id);
-    return r.body!;
+    // метод после регенерации будет apiV1ProjectsIdGet
+    final response = await _api.apiV1ProjectsIdGet(id: id);
+    return response.body!;
   }
 
-  // ================= PROFILES =================
+  // ---------------------------------------------------------------------------
+  //  Profiles
+  // ---------------------------------------------------------------------------
+
   Future<ProfileResponse> createProfile({
     required String projectId,
     required List<double> start,
     required List<double> end,
   }) async {
-    final r = await _api.apiV1ProjectIdProfilePost(
+    final response = await _api.apiV1ProjectIdProfilePost(
       projectId: projectId,
       body: ProfileRequest(start: start, end: end),
     );
-    return r.body!;
+    return response.body!;
   }
 
   Future<ProfileList> getProfilesList({required String projectId}) async {
-    final r = await _api.apiV1ProjectIdListGet(projectId: projectId);
-    return r.body!;
+    final response = await _api.apiV1ProjectIdListGet(projectId: projectId);
+    return response.body!;
   }
 
   Future<FullProfileResponse> getFullProfile({
     required String projectId,
     required String profileId,
   }) async {
-    final r = await _api.apiV1ProjectIdProfileProfileIdGet(
+    final response = await _api.apiV1ProjectIdProfileProfileIdGet(
       projectId: projectId,
       profileId: profileId,
     );
-    return r.body!;
+    return response.body!;
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Reports
+  // ---------------------------------------------------------------------------
+
+  // lib/services/api_service.dart  (полный файл не меняем, только метод)
+
+  Future<ReportResponse> getProfileReport({
+    required String projectId,
+    required String profileId,
+  }) async {
+    final response =
+    await _api.apiV1ProjectsProjectIdProfilesProfileIdReportGet(
+      projectId: projectId,
+      profileId: profileId,
+    );
+    return response.body!;
   }
 }

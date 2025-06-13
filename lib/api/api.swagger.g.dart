@@ -53,6 +53,10 @@ FullProfileResponse _$FullProfileResponseFromJson(Map<String, dynamic> json) =>
               ?.map((e) => ProfilePoint.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      mainPoints: (json['mainPoints'] as List<dynamic>?)
+              ?.map((e) => ProfilePoint.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
 
 Map<String, dynamic> _$FullProfileResponseToJson(
@@ -64,10 +68,11 @@ Map<String, dynamic> _$FullProfileResponseToJson(
       'length_m': instance.lengthM,
       'created_at': instance.createdAt?.toIso8601String(),
       'points': instance.points?.map((e) => e.toJson()).toList(),
+      'mainPoints': instance.mainPoints?.map((e) => e.toJson()).toList(),
     };
 
 IsolineDto _$IsolineDtoFromJson(Map<String, dynamic> json) => IsolineDto(
-      level: (json['level'] as num?)?.toInt(),
+      level: (json['level'] as num?)?.toDouble(),
       geomWkt: json['geomWkt'] as String?,
     );
 
@@ -118,12 +123,14 @@ Map<String, dynamic> _$ProfileListItemToJson(ProfileListItem instance) =>
 ProfilePoint _$ProfilePointFromJson(Map<String, dynamic> json) => ProfilePoint(
       distance: (json['distance'] as num?)?.toDouble(),
       elevation: (json['elevation'] as num?)?.toDouble(),
+      isOnIsoline: json['isOnIsoline'] as bool?,
     );
 
 Map<String, dynamic> _$ProfilePointToJson(ProfilePoint instance) =>
     <String, dynamic>{
       'distance': instance.distance,
       'elevation': instance.elevation,
+      'isOnIsoline': instance.isOnIsoline,
     };
 
 ProfileRequest _$ProfileRequestFromJson(Map<String, dynamic> json) =>
@@ -152,6 +159,10 @@ ProfileResponse _$ProfileResponseFromJson(Map<String, dynamic> json) =>
               ?.map((e) => ProfilePoint.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      mainPoints: (json['mainPoints'] as List<dynamic>?)
+              ?.map((e) => ProfilePoint.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
 
 Map<String, dynamic> _$ProfileResponseToJson(ProfileResponse instance) =>
@@ -159,6 +170,7 @@ Map<String, dynamic> _$ProfileResponseToJson(ProfileResponse instance) =>
       'profileId': instance.profileId,
       'length_m': instance.lengthM,
       'points': instance.points?.map((e) => e.toJson()).toList(),
+      'mainPoints': instance.mainPoints?.map((e) => e.toJson()).toList(),
     };
 
 ProjectDto _$ProjectDtoFromJson(Map<String, dynamic> json) => ProjectDto(
@@ -230,6 +242,30 @@ RefreshRequest _$RefreshRequestFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$RefreshRequestToJson(RefreshRequest instance) =>
     <String, dynamic>{
       'refreshToken': instance.refreshToken,
+    };
+
+ReportResponse _$ReportResponseFromJson(Map<String, dynamic> json) =>
+    ReportResponse(
+      projectId: json['projectId'] as String?,
+      name: json['name'] as String?,
+      bboxWkt: json['bbox_wkt'] as String?,
+      isolines: (json['isolines'] as List<dynamic>?)
+              ?.map((e) => IsolineDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      profile: json['profile'] == null
+          ? null
+          : FullProfileResponse.fromJson(
+              json['profile'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$ReportResponseToJson(ReportResponse instance) =>
+    <String, dynamic>{
+      'projectId': instance.projectId,
+      'name': instance.name,
+      'bbox_wkt': instance.bboxWkt,
+      'isolines': instance.isolines?.map((e) => e.toJson()).toList(),
+      'profile': instance.profile?.toJson(),
     };
 
 TokenDto _$TokenDtoFromJson(Map<String, dynamic> json) => TokenDto(

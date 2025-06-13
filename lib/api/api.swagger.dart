@@ -86,18 +86,43 @@ abstract class Api extends ChopperService {
   });
 
   ///
+  ///@param projectId
+  ///@param profileId
+  Future<chopper.Response<ReportResponse>>
+      apiV1ProjectsProjectIdProfilesProfileIdReportGet({
+    required String? projectId,
+    required String? profileId,
+  }) {
+    generatedMapping.putIfAbsent(
+        ReportResponse, () => ReportResponse.fromJsonFactory);
+
+    return _apiV1ProjectsProjectIdProfilesProfileIdReportGet(
+        projectId: projectId, profileId: profileId);
+  }
+
+  ///
+  ///@param projectId
+  ///@param profileId
+  @Get(path: '/api/v1/projects/{projectId}/profiles/{profileId}/report')
+  Future<chopper.Response<ReportResponse>>
+      _apiV1ProjectsProjectIdProfilesProfileIdReportGet({
+    @Path('projectId') required String? projectId,
+    @Path('profileId') required String? profileId,
+  });
+
+  ///
   ///@param id
-  Future<chopper.Response<ProjectDto>> apiV1ProjectIdGet(
+  Future<chopper.Response<ProjectDto>> apiV1ProjectsIdGet(
       {required String? id}) {
     generatedMapping.putIfAbsent(ProjectDto, () => ProjectDto.fromJsonFactory);
 
-    return _apiV1ProjectIdGet(id: id);
+    return _apiV1ProjectsIdGet(id: id);
   }
 
   ///
   ///@param id
-  @Get(path: '/api/v1/project/{id}')
-  Future<chopper.Response<ProjectDto>> _apiV1ProjectIdGet(
+  @Get(path: '/api/v1/projects/{id}')
+  Future<chopper.Response<ProjectDto>> _apiV1ProjectsIdGet(
       {@Path('id') required String? id});
 
   ///
@@ -346,6 +371,7 @@ class FullProfileResponse {
     this.lengthM,
     this.createdAt,
     this.points,
+    this.mainPoints,
   });
 
   factory FullProfileResponse.fromJson(Map<String, dynamic> json) =>
@@ -366,6 +392,8 @@ class FullProfileResponse {
   final DateTime? createdAt;
   @JsonKey(name: 'points', defaultValue: <ProfilePoint>[])
   final List<ProfilePoint>? points;
+  @JsonKey(name: 'mainPoints', defaultValue: <ProfilePoint>[])
+  final List<ProfilePoint>? mainPoints;
   static const fromJsonFactory = _$FullProfileResponseFromJson;
 
   @override
@@ -386,7 +414,10 @@ class FullProfileResponse {
                 const DeepCollectionEquality()
                     .equals(other.createdAt, createdAt)) &&
             (identical(other.points, points) ||
-                const DeepCollectionEquality().equals(other.points, points)));
+                const DeepCollectionEquality().equals(other.points, points)) &&
+            (identical(other.mainPoints, mainPoints) ||
+                const DeepCollectionEquality()
+                    .equals(other.mainPoints, mainPoints)));
   }
 
   @override
@@ -400,6 +431,7 @@ class FullProfileResponse {
       const DeepCollectionEquality().hash(lengthM) ^
       const DeepCollectionEquality().hash(createdAt) ^
       const DeepCollectionEquality().hash(points) ^
+      const DeepCollectionEquality().hash(mainPoints) ^
       runtimeType.hashCode;
 }
 
@@ -410,14 +442,16 @@ extension $FullProfileResponseExtension on FullProfileResponse {
       List<double>? end,
       double? lengthM,
       DateTime? createdAt,
-      List<ProfilePoint>? points}) {
+      List<ProfilePoint>? points,
+      List<ProfilePoint>? mainPoints}) {
     return FullProfileResponse(
         profileId: profileId ?? this.profileId,
         start: start ?? this.start,
         end: end ?? this.end,
         lengthM: lengthM ?? this.lengthM,
         createdAt: createdAt ?? this.createdAt,
-        points: points ?? this.points);
+        points: points ?? this.points,
+        mainPoints: mainPoints ?? this.mainPoints);
   }
 
   FullProfileResponse copyWithWrapped(
@@ -426,14 +460,16 @@ extension $FullProfileResponseExtension on FullProfileResponse {
       Wrapped<List<double>?>? end,
       Wrapped<double?>? lengthM,
       Wrapped<DateTime?>? createdAt,
-      Wrapped<List<ProfilePoint>?>? points}) {
+      Wrapped<List<ProfilePoint>?>? points,
+      Wrapped<List<ProfilePoint>?>? mainPoints}) {
     return FullProfileResponse(
         profileId: (profileId != null ? profileId.value : this.profileId),
         start: (start != null ? start.value : this.start),
         end: (end != null ? end.value : this.end),
         lengthM: (lengthM != null ? lengthM.value : this.lengthM),
         createdAt: (createdAt != null ? createdAt.value : this.createdAt),
-        points: (points != null ? points.value : this.points));
+        points: (points != null ? points.value : this.points),
+        mainPoints: (mainPoints != null ? mainPoints.value : this.mainPoints));
   }
 }
 
@@ -451,7 +487,7 @@ class IsolineDto {
   Map<String, dynamic> toJson() => _$IsolineDtoToJson(this);
 
   @JsonKey(name: 'level')
-  final int? level;
+  final double? level;
   @JsonKey(name: 'geomWkt')
   final String? geomWkt;
   static const fromJsonFactory = _$IsolineDtoFromJson;
@@ -477,13 +513,13 @@ class IsolineDto {
 }
 
 extension $IsolineDtoExtension on IsolineDto {
-  IsolineDto copyWith({int? level, String? geomWkt}) {
+  IsolineDto copyWith({double? level, String? geomWkt}) {
     return IsolineDto(
         level: level ?? this.level, geomWkt: geomWkt ?? this.geomWkt);
   }
 
   IsolineDto copyWithWrapped(
-      {Wrapped<int?>? level, Wrapped<String?>? geomWkt}) {
+      {Wrapped<double?>? level, Wrapped<String?>? geomWkt}) {
     return IsolineDto(
         level: (level != null ? level.value : this.level),
         geomWkt: (geomWkt != null ? geomWkt.value : this.geomWkt));
@@ -626,6 +662,7 @@ class ProfilePoint {
   const ProfilePoint({
     this.distance,
     this.elevation,
+    this.isOnIsoline,
   });
 
   factory ProfilePoint.fromJson(Map<String, dynamic> json) =>
@@ -638,6 +675,8 @@ class ProfilePoint {
   final double? distance;
   @JsonKey(name: 'elevation')
   final double? elevation;
+  @JsonKey(name: 'isOnIsoline')
+  final bool? isOnIsoline;
   static const fromJsonFactory = _$ProfilePointFromJson;
 
   @override
@@ -649,7 +688,10 @@ class ProfilePoint {
                     .equals(other.distance, distance)) &&
             (identical(other.elevation, elevation) ||
                 const DeepCollectionEquality()
-                    .equals(other.elevation, elevation)));
+                    .equals(other.elevation, elevation)) &&
+            (identical(other.isOnIsoline, isOnIsoline) ||
+                const DeepCollectionEquality()
+                    .equals(other.isOnIsoline, isOnIsoline)));
   }
 
   @override
@@ -659,21 +701,28 @@ class ProfilePoint {
   int get hashCode =>
       const DeepCollectionEquality().hash(distance) ^
       const DeepCollectionEquality().hash(elevation) ^
+      const DeepCollectionEquality().hash(isOnIsoline) ^
       runtimeType.hashCode;
 }
 
 extension $ProfilePointExtension on ProfilePoint {
-  ProfilePoint copyWith({double? distance, double? elevation}) {
+  ProfilePoint copyWith(
+      {double? distance, double? elevation, bool? isOnIsoline}) {
     return ProfilePoint(
         distance: distance ?? this.distance,
-        elevation: elevation ?? this.elevation);
+        elevation: elevation ?? this.elevation,
+        isOnIsoline: isOnIsoline ?? this.isOnIsoline);
   }
 
   ProfilePoint copyWithWrapped(
-      {Wrapped<double?>? distance, Wrapped<double?>? elevation}) {
+      {Wrapped<double?>? distance,
+      Wrapped<double?>? elevation,
+      Wrapped<bool?>? isOnIsoline}) {
     return ProfilePoint(
         distance: (distance != null ? distance.value : this.distance),
-        elevation: (elevation != null ? elevation.value : this.elevation));
+        elevation: (elevation != null ? elevation.value : this.elevation),
+        isOnIsoline:
+            (isOnIsoline != null ? isOnIsoline.value : this.isOnIsoline));
   }
 }
 
@@ -735,6 +784,7 @@ class ProfileResponse {
     this.profileId,
     this.lengthM,
     this.points,
+    this.mainPoints,
   });
 
   factory ProfileResponse.fromJson(Map<String, dynamic> json) =>
@@ -749,6 +799,8 @@ class ProfileResponse {
   final double? lengthM;
   @JsonKey(name: 'points', defaultValue: <ProfilePoint>[])
   final List<ProfilePoint>? points;
+  @JsonKey(name: 'mainPoints', defaultValue: <ProfilePoint>[])
+  final List<ProfilePoint>? mainPoints;
   static const fromJsonFactory = _$ProfileResponseFromJson;
 
   @override
@@ -762,7 +814,10 @@ class ProfileResponse {
                 const DeepCollectionEquality()
                     .equals(other.lengthM, lengthM)) &&
             (identical(other.points, points) ||
-                const DeepCollectionEquality().equals(other.points, points)));
+                const DeepCollectionEquality().equals(other.points, points)) &&
+            (identical(other.mainPoints, mainPoints) ||
+                const DeepCollectionEquality()
+                    .equals(other.mainPoints, mainPoints)));
   }
 
   @override
@@ -773,26 +828,33 @@ class ProfileResponse {
       const DeepCollectionEquality().hash(profileId) ^
       const DeepCollectionEquality().hash(lengthM) ^
       const DeepCollectionEquality().hash(points) ^
+      const DeepCollectionEquality().hash(mainPoints) ^
       runtimeType.hashCode;
 }
 
 extension $ProfileResponseExtension on ProfileResponse {
   ProfileResponse copyWith(
-      {String? profileId, double? lengthM, List<ProfilePoint>? points}) {
+      {String? profileId,
+      double? lengthM,
+      List<ProfilePoint>? points,
+      List<ProfilePoint>? mainPoints}) {
     return ProfileResponse(
         profileId: profileId ?? this.profileId,
         lengthM: lengthM ?? this.lengthM,
-        points: points ?? this.points);
+        points: points ?? this.points,
+        mainPoints: mainPoints ?? this.mainPoints);
   }
 
   ProfileResponse copyWithWrapped(
       {Wrapped<String?>? profileId,
       Wrapped<double?>? lengthM,
-      Wrapped<List<ProfilePoint>?>? points}) {
+      Wrapped<List<ProfilePoint>?>? points,
+      Wrapped<List<ProfilePoint>?>? mainPoints}) {
     return ProfileResponse(
         profileId: (profileId != null ? profileId.value : this.profileId),
         lengthM: (lengthM != null ? lengthM.value : this.lengthM),
-        points: (points != null ? points.value : this.points));
+        points: (points != null ? points.value : this.points),
+        mainPoints: (mainPoints != null ? mainPoints.value : this.mainPoints));
   }
 }
 
@@ -1091,6 +1153,96 @@ extension $RefreshRequestExtension on RefreshRequest {
     return RefreshRequest(
         refreshToken:
             (refreshToken != null ? refreshToken.value : this.refreshToken));
+  }
+}
+
+@JsonSerializable(explicitToJson: true)
+class ReportResponse {
+  const ReportResponse({
+    this.projectId,
+    this.name,
+    this.bboxWkt,
+    this.isolines,
+    this.profile,
+  });
+
+  factory ReportResponse.fromJson(Map<String, dynamic> json) =>
+      _$ReportResponseFromJson(json);
+
+  static const toJsonFactory = _$ReportResponseToJson;
+  Map<String, dynamic> toJson() => _$ReportResponseToJson(this);
+
+  @JsonKey(name: 'projectId')
+  final String? projectId;
+  @JsonKey(name: 'name')
+  final String? name;
+  @JsonKey(name: 'bbox_wkt')
+  final String? bboxWkt;
+  @JsonKey(name: 'isolines', defaultValue: <IsolineDto>[])
+  final List<IsolineDto>? isolines;
+  @JsonKey(name: 'profile')
+  final FullProfileResponse? profile;
+  static const fromJsonFactory = _$ReportResponseFromJson;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other is ReportResponse &&
+            (identical(other.projectId, projectId) ||
+                const DeepCollectionEquality()
+                    .equals(other.projectId, projectId)) &&
+            (identical(other.name, name) ||
+                const DeepCollectionEquality().equals(other.name, name)) &&
+            (identical(other.bboxWkt, bboxWkt) ||
+                const DeepCollectionEquality()
+                    .equals(other.bboxWkt, bboxWkt)) &&
+            (identical(other.isolines, isolines) ||
+                const DeepCollectionEquality()
+                    .equals(other.isolines, isolines)) &&
+            (identical(other.profile, profile) ||
+                const DeepCollectionEquality().equals(other.profile, profile)));
+  }
+
+  @override
+  String toString() => jsonEncode(this);
+
+  @override
+  int get hashCode =>
+      const DeepCollectionEquality().hash(projectId) ^
+      const DeepCollectionEquality().hash(name) ^
+      const DeepCollectionEquality().hash(bboxWkt) ^
+      const DeepCollectionEquality().hash(isolines) ^
+      const DeepCollectionEquality().hash(profile) ^
+      runtimeType.hashCode;
+}
+
+extension $ReportResponseExtension on ReportResponse {
+  ReportResponse copyWith(
+      {String? projectId,
+      String? name,
+      String? bboxWkt,
+      List<IsolineDto>? isolines,
+      FullProfileResponse? profile}) {
+    return ReportResponse(
+        projectId: projectId ?? this.projectId,
+        name: name ?? this.name,
+        bboxWkt: bboxWkt ?? this.bboxWkt,
+        isolines: isolines ?? this.isolines,
+        profile: profile ?? this.profile);
+  }
+
+  ReportResponse copyWithWrapped(
+      {Wrapped<String?>? projectId,
+      Wrapped<String?>? name,
+      Wrapped<String?>? bboxWkt,
+      Wrapped<List<IsolineDto>?>? isolines,
+      Wrapped<FullProfileResponse?>? profile}) {
+    return ReportResponse(
+        projectId: (projectId != null ? projectId.value : this.projectId),
+        name: (name != null ? name.value : this.name),
+        bboxWkt: (bboxWkt != null ? bboxWkt.value : this.bboxWkt),
+        isolines: (isolines != null ? isolines.value : this.isolines),
+        profile: (profile != null ? profile.value : this.profile));
   }
 }
 

@@ -49,8 +49,24 @@ final class _$Api extends Api {
   }
 
   @override
-  Future<Response<ProjectDto>> _apiV1ProjectIdGet({required String? id}) {
-    final Uri $url = Uri.parse('/api/v1/project/${id}');
+  Future<Response<ReportResponse>>
+      _apiV1ProjectsProjectIdProfilesProfileIdReportGet({
+    required String? projectId,
+    required String? profileId,
+  }) {
+    final Uri $url =
+        Uri.parse('/api/v1/projects/${projectId}/profiles/${profileId}/report');
+    final Request $request = Request(
+      'GET',
+      $url,
+      client.baseUrl,
+    );
+    return client.send<ReportResponse, ReportResponse>($request);
+  }
+
+  @override
+  Future<Response<ProjectDto>> _apiV1ProjectsIdGet({required String? id}) {
+    final Uri $url = Uri.parse('/api/v1/projects/${id}');
     final Request $request = Request(
       'GET',
       $url,

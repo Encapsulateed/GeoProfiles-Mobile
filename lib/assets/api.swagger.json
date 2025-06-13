@@ -39,7 +39,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -78,14 +78,14 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "OK",
+          "201": {
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProfileResponse"
                 },
-                "example": {"profileId":"3fa85f64-5717-4562-b3fc-2c963f66afa6","length_m":1234.56,"points":[{"distance":0,"elevation":10.5},{"distance":100,"elevation":15.2},{"distance":200,"elevation":20.1},{"distance":300,"elevation":18.7},{"distance":400,"elevation":22.4},{"distance":500,"elevation":25},{"distance":600,"elevation":23.8},{"distance":700,"elevation":27.5},{"distance":800,"elevation":30}]}
+                "example": {"profileId":"11111111-2222-3333-4444-555555555555","length_m":1234.56,"points":[{"distance":0,"elevation":12.3,"isOnIsoline":true},{"distance":50,"elevation":13.1,"isOnIsoline":false},{"distance":100,"elevation":14,"isOnIsoline":true},{"distance":150,"elevation":14.8,"isOnIsoline":false}],"mainPoints":[{"distance":0,"elevation":12.3,"isOnIsoline":true},{"distance":100,"elevation":14,"isOnIsoline":true}]}
               }
             }
           },
@@ -96,7 +96,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -108,7 +108,63 @@
         ]
       }
     },
-    "/api/v1/project/{id}": {
+    "/api/v1/projects/{projectId}/profiles/{profileId}/report": {
+      "get": {
+        "tags": [
+          "Get"
+        ],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "profileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                },
+                "example": {"projectId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","name":"North Ridge","bbox_wkt":"POLYGON((30 60, 31 60, 31 61, 30 61, 30 60))","isolines":[{"level":650,"geomWkt":"LINESTRING(30 60, 30.5 60.5)"},{"level":660,"geomWkt":"LINESTRING(30 60.1, 30.6 60.6)"}],"profile":{"profileId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","start":[30.1,60],"end":[30.4,60.4],"length_m":1234,"created_at":"2025-06-01T13:00:00+03:00","points":[{"distance":0,"elevation":640,"isOnIsoline":true},{"distance":200,"elevation":650,"isOnIsoline":false},{"distance":400,"elevation":670,"isOnIsoline":true}],"mainPoints":[{"distance":0,"elevation":640,"isOnIsoline":true},{"distance":400,"elevation":670,"isOnIsoline":true}]}}
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "Bearer": [ ]
+          }
+        ]
+      }
+    },
+    "/api/v1/projects/{id}": {
       "get": {
         "tags": [
           "Get"
@@ -143,7 +199,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -188,7 +244,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/FullProfileResponse"
                 },
-                "example": {"profileId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","start":[30.1,59.9],"end":[30.5,60.2],"length_m":500.0,"created_at":"2025-05-20T13:00:00+03:00","points":[{"distance":0,"elevation":100},{"distance":125,"elevation":110},{"distance":250,"elevation":120},{"distance":375,"elevation":115},{"distance":500,"elevation":105}]}
+                "example": {"profileId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","start":[30.1,59.9],"end":[30.5,60.2],"length_m":500.0,"created_at":"2025-05-20T13:00:00+03:00","points":[{"distance":0,"elevation":100,"isOnIsoline":true},{"distance":125,"elevation":110,"isOnIsoline":false},{"distance":250,"elevation":120,"isOnIsoline":true},{"distance":375,"elevation":115,"isOnIsoline":false},{"distance":500,"elevation":105,"isOnIsoline":true}],"mainPoints":[{"distance":0,"elevation":100,"isOnIsoline":true},{"distance":250,"elevation":120,"isOnIsoline":true},{"distance":500,"elevation":105,"isOnIsoline":true}]}
               }
             }
           },
@@ -199,7 +255,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           },
@@ -210,7 +266,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -246,7 +302,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           },
@@ -257,7 +313,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -304,7 +360,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -350,7 +406,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -381,7 +437,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           },
@@ -430,7 +486,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -471,7 +527,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           },
@@ -482,7 +538,7 @@
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
                 },
-                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"956c0e3a26c681d9"}
+                "example": {"errorCode":"validation_error","errorMessage":"One or more validation errors occurred.","errorDetails":[{"field":"param","error":"\"param\" must be greater than 10 characters."}],"errorId":"49da5611dfdfef5f"}
               }
             }
           }
@@ -561,6 +617,13 @@
               "$ref": "#/components/schemas/ProfilePoint"
             },
             "nullable": true
+          },
+          "mainPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePoint"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -569,8 +632,8 @@
         "type": "object",
         "properties": {
           "level": {
-            "type": "integer",
-            "format": "int32"
+            "type": "number",
+            "format": "double"
           },
           "geomWkt": {
             "type": "string",
@@ -636,6 +699,9 @@
           "elevation": {
             "type": "number",
             "format": "double"
+          },
+          "isOnIsoline": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -674,6 +740,13 @@
             "format": "double"
           },
           "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfilePoint"
+            },
+            "nullable": true
+          },
+          "mainPoints": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProfilePoint"
@@ -763,6 +836,34 @@
           "refreshToken": {
             "type": "string",
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "bbox_wkt": {
+            "type": "string",
+            "nullable": true
+          },
+          "isolines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IsolineDto"
+            },
+            "nullable": true
+          },
+          "profile": {
+            "$ref": "#/components/schemas/FullProfileResponse"
           }
         },
         "additionalProperties": false

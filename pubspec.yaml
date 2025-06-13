@@ -30,6 +30,10 @@ dependencies:
   fl_chart: ^0.71.0
   flutter_cube: ^0.1.1
   vector_math: ^2.1.4
+  pdf: ^3.11.3
+  printing: ^5.14.2
+
+
 
 dev_dependencies:
   flutter_test:
@@ -47,6 +51,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - lib/assets/api.swagger.json
+    - lib/assets/fonts/Roboto-Regular.ttf
+    - lib/assets/fonts/Roboto-Bold.ttf
 
 
